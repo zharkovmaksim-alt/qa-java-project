@@ -3,13 +3,14 @@ package praktikum;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(Parameterized.class)
 public class BurgerTest {
 
     private Burger burger;
@@ -20,8 +21,25 @@ public class BurgerTest {
     @Mock
     private Ingredient mockIngredient;
 
+    private IngredientType ingredientType;
+    private String ingredientName;
+
+    public BurgerTest(IngredientType ingredientType, String ingredientName) {
+        this.ingredientType = ingredientType;
+        this.ingredientName = ingredientName;
+    }
+
+    @Parameterized.Parameters
+    public static Object[][] getTestData() {
+        return new Object[][]{
+                {IngredientType.SAUCE, "Соус"},
+                {IngredientType.FILLING, "Начинка"}
+        };
+    }
+
     @Before
     public void setUp() {
+        MockitoAnnotations.openMocks(this);
         burger = new Burger();
     }
 
@@ -32,10 +50,25 @@ public class BurgerTest {
     }
 
     @Test
-    public void addIngredientShouldAddIngredientCorrectly() {
+    public void addIngredientShouldIncreaseSize() {
         burger.addIngredient(mockIngredient);
         assertEquals(1, burger.ingredients.size());
+    }
+
+    @Test
+    public void addIngredientShouldAddCorrectIngredient() {
+        burger.addIngredient(mockIngredient);
         assertEquals(mockIngredient, burger.ingredients.get(0));
+    }
+
+    @Test
+    public void addIngredientWithDifferentTypesShouldWork() {
+        Ingredient ingredient = mock(Ingredient.class);
+        when(ingredient.getType()).thenReturn(ingredientType);
+        when(ingredient.getName()).thenReturn(ingredientName);
+        burger.addIngredient(ingredient);
+        assertEquals(1, burger.ingredients.size());
+        assertEquals(ingredient, burger.ingredients.get(0));
     }
 
     @Test
@@ -48,13 +81,13 @@ public class BurgerTest {
 
     @Test
     public void moveIngredientShouldMoveIngredientCorrectly() {
-        Ingredient ingredient1 = mock(Ingredient.class);
-        Ingredient ingredient2 = mock(Ingredient.class);
-        burger.addIngredient(ingredient1);
-        burger.addIngredient(ingredient2);
+        Ingredient firstIngredient = mock(Ingredient.class);
+        Ingredient secondIngredient = mock(Ingredient.class);
+        burger.addIngredient(firstIngredient);
+        burger.addIngredient(secondIngredient);
         burger.moveIngredient(1, 0);
-        assertEquals(ingredient2, burger.ingredients.get(0));
-        assertEquals(ingredient1, burger.ingredients.get(1));
+        assertEquals(secondIngredient, burger.ingredients.get(0));
+        assertEquals(firstIngredient, burger.ingredients.get(1));
     }
 
     @Test
