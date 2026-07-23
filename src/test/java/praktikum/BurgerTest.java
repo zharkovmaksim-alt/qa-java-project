@@ -1,17 +1,19 @@
 package praktikum;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-@RunWith(Parameterized.class)
 public class BurgerTest {
+
+    @Rule
+    public MockitoRule rule = MockitoJUnit.rule();
 
     private Burger burger;
 
@@ -21,25 +23,8 @@ public class BurgerTest {
     @Mock
     private Ingredient mockIngredient;
 
-    private IngredientType ingredientType;
-    private String ingredientName;
-
-    public BurgerTest(IngredientType ingredientType, String ingredientName) {
-        this.ingredientType = ingredientType;
-        this.ingredientName = ingredientName;
-    }
-
-    @Parameterized.Parameters
-    public static Object[][] getTestData() {
-        return new Object[][]{
-                {IngredientType.SAUCE, "Соус"},
-                {IngredientType.FILLING, "Начинка"}
-        };
-    }
-
     @Before
     public void setUp() {
-        MockitoAnnotations.openMocks(this);
         burger = new Burger();
     }
 
@@ -62,30 +47,36 @@ public class BurgerTest {
     }
 
     @Test
-    public void addIngredientWithDifferentTypesShouldWork() {
-        Ingredient ingredient = mock(Ingredient.class);
-        when(ingredient.getType()).thenReturn(ingredientType);
-        when(ingredient.getName()).thenReturn(ingredientName);
-        burger.addIngredient(ingredient);
-        assertEquals(1, burger.ingredients.size());
-        assertEquals(ingredient, burger.ingredients.get(0));
+    public void removeIngredientShouldRemoveIngredientCorrectly() {
+        burger.addIngredient(mockIngredient);
+        burger.removeIngredient(0);
+        assertEquals(0, burger.ingredients.size());
     }
 
     @Test
-    public void removeIngredientShouldRemoveIngredientCorrectly() {
-        burger.addIngredient(mockIngredient);
-        assertEquals(1, burger.ingredients.size());
+    public void removeIngredientShouldRemoveCorrectIngredient() {
+        Ingredient firstIngredient = mock(Ingredient.class);
+        Ingredient secondIngredient = mock(Ingredient.class);
+
+        burger.addIngredient(firstIngredient);
+        burger.addIngredient(secondIngredient);
+
         burger.removeIngredient(0);
-        assertEquals(0, burger.ingredients.size());
+
+        assertEquals(secondIngredient, burger.ingredients.get(0));
+        assertEquals(1, burger.ingredients.size());
     }
 
     @Test
     public void moveIngredientShouldMoveIngredientCorrectly() {
         Ingredient firstIngredient = mock(Ingredient.class);
         Ingredient secondIngredient = mock(Ingredient.class);
+
         burger.addIngredient(firstIngredient);
         burger.addIngredient(secondIngredient);
+
         burger.moveIngredient(1, 0);
+
         assertEquals(secondIngredient, burger.ingredients.get(0));
         assertEquals(firstIngredient, burger.ingredients.get(1));
     }
@@ -94,26 +85,58 @@ public class BurgerTest {
     public void getPriceShouldReturnCorrectSum() {
         when(mockBun.getPrice()).thenReturn(1.5f);
         when(mockIngredient.getPrice()).thenReturn(2.0f);
+
         burger.setBuns(mockBun);
         burger.addIngredient(mockIngredient);
-        float price = burger.getPrice();
+
         float expectedPrice = 1.5f * 2 + 2.0f;
-        assertEquals(expectedPrice, price, 0.01f);
+        assertEquals(expectedPrice, burger.getPrice(), 0.01f);
     }
 
     @Test
-    public void getReceiptShouldReturnCorrectFormat() {
-        when(mockBun.getName()).thenReturn("Краторная булка");
-        when(mockBun.getPrice()).thenReturn(1.5f);
-        when(mockIngredient.getName()).thenReturn("Соус");
-        when(mockIngredient.getType()).thenReturn(IngredientType.SAUCE);
-        when(mockIngredient.getPrice()).thenReturn(2.0f);
+    public void getPriceShouldIncludeTwoBuns() {
+        when(mockBun.getPrice()).thenReturn(2.0f);
+
         burger.setBuns(mockBun);
-        burger.addIngredient(mockIngredient);
+
+        float expectedPrice = 4.0f;
+        assertEquals(expectedPrice, burger.getPrice(), 0.01f);
+    }
+
+    @Test
+    public void getReceiptShouldContainBunName() {
+        when(mockBun.getName()).thenReturn("Краторная булка");
+        burger.setBuns(mockBun);
+
         String receipt = burger.getReceipt();
         assertTrue(receipt.contains("(==== Краторная булка ====)"));
+    }
+
+    @Test
+    public void getReceiptShouldContainIngredientInfo() {
+        when(mockBun.getName()).thenReturn("Краторная булка");
+        when(mockBun.getPrice()).thenReturn(1.0f);
+        when(mockIngredient.getName()).thenReturn("Соус");
+        when(mockIngredient.getType()).thenReturn(IngredientType.SAUCE);
+        when(mockIngredient.getPrice()).thenReturn(1.0f);
+
+        burger.setBuns(mockBun);
+        burger.addIngredient(mockIngredient);
+
+        String receipt = burger.getReceipt();
         assertTrue(receipt.contains("= sauce Соус ="));
-        assertTrue(receipt.contains("(==== Краторная булка ====)"));
+    }
+
+    @Test
+    public void getReceiptShouldContainPrice() {
+        Bun realBun = new Bun("Краторная булка", 1.5f);
+        Ingredient realIngredient = new Ingredient(IngredientType.SAUCE, "Соус", 2.0f);
+
+        burger.setBuns(realBun);
+        burger.addIngredient(realIngredient);
+
+        String receipt = burger.getReceipt();
         assertTrue(receipt.contains("Price:"));
+        assertTrue(receipt.contains("5")); // 1.5 + 1.5 + 2.0 = 5.0
     }
 }
